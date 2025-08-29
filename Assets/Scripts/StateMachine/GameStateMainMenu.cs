@@ -18,7 +18,6 @@ public class GameStateMainMenu : GameState
     {
         base.OnEnter();
         GameEventManager.MainMenuEvent += startGame;
-        GameObject.Find("MainMenu").SetActive(true);
         Debug.Log("Entered Main Menu");
     }
 
@@ -33,11 +32,7 @@ public class GameStateMainMenu : GameState
     public override void Update()
     {
         base.Update();
-        if (Input.anyKey)
-        {
-            startGame();
-            Debug.Log("Game starting");
-        }
+        
 
     }
 
