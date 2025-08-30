@@ -44,11 +44,17 @@ TagManager:
   - name: Ground
     uniqueID: 1614516193
     locked: 0
+  - name: Props
+    uniqueID: 1817023489
+    locked: 0
   - name: Player
     uniqueID: 1152478491
     locked: 0
   - name: Enemy
     uniqueID: 4180628935
+    locked: 0
+  - name: FX
+    uniqueID: 581913019
     locked: 0
   m_RenderingLayers:
   - Default

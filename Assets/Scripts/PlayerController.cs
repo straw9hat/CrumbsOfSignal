@@ -37,6 +37,17 @@ public class PlayerController : MonoBehaviour
     private float nextDodgeAllowedTime = 0f;
     private Coroutine dodgeCo;
 
+    [SerializeField] private PlayerInventory inventory;
+
+    [SerializeField] private InventoryUI inventoryUI;
+
+    // replace your static melee fields *or* keep them as fallback
+    [SerializeField] private int fallbackDamage = 10;
+    [SerializeField] private float fallbackCooldown = 0.35f;
+    [SerializeField] private float fallbackReach = 1.0f;
+    [SerializeField] private float fallbackRadius = 0.7f;
+    [SerializeField] private float fallbackArcDeg = 120f;
+
     private float lastAttackTime = -999f;
 
     // Input System (generated C# from your input actions)
@@ -58,6 +69,9 @@ public class PlayerController : MonoBehaviour
 
         // Attack (unchanged, but we’ll cancel dodge inside TryMelee)
         controls.Gameplay.Attack.performed += ctx => TryMelee();
+
+        //Inventory toggle
+        controls.Gameplay.Inventory.performed += ctx => Toggle();
     }
 
     private void TryDodge()
@@ -68,6 +82,12 @@ public class PlayerController : MonoBehaviour
 
         if (dodgeCo != null) StopCoroutine(dodgeCo);
         dodgeCo = StartCoroutine(DodgeRoutine());
+    }
+
+    private void Toggle()
+    {
+        if (inventoryUI != null)
+            inventoryUI.TogglePanel();
     }
 
     private IEnumerator DodgeRoutine()
@@ -147,44 +167,58 @@ public class PlayerController : MonoBehaviour
         return dir.normalized;
     }
 
+    private bool GetEquippedParams(out int dmg, out float cd, out float reach, out float radius, out float arc)
+    {
+        dmg = fallbackDamage; cd = fallbackCooldown;
+        reach = fallbackReach; radius = fallbackRadius; arc = fallbackArcDeg;
+
+        var inst = inventory ? inventory.GetEquipped() : null;
+        if (inst == null || inst.def == null) return false;
+
+        dmg = inst.def.baseDamage;
+        cd = inst.def.cooldown;
+        reach = inst.def.reach;
+        radius = inst.def.radius;
+        arc = inst.def.arcDegrees;
+        return true;
+    }
+
     private void TryMelee()
     {
         if (!health || !health.IsAlive) return;
 
-        if (isDodging)
-        {
-            // Cancel current i-frames immediately and start post-dodge lockout
-            health.CancelIFrames();
-            isDodging = false;
-            nextDodgeAllowedTime = Time.time + postDodgeDelay;
+        GetEquippedParams(out int dmg, out float cd, out float reach, out float radius, out float arc);
 
-            if (dodgeCo != null) { StopCoroutine(dodgeCo); dodgeCo = null; }
-        }
-
-        // ... existing attack code below ...
+        if (Time.time < lastAttackTime + cd) return;
+        lastAttackTime = Time.time;
 
         Vector2 aimDir = GetAimDirection();
-        Vector2 center = (Vector2)transform.position + aimDir * meleeReach;
+        Vector2 center = (Vector2)transform.position + aimDir * reach;
 
         if (animator != null) animator.SetTrigger("Attack");
 
-        var hits = Physics2D.OverlapCircleAll(center, meleeRadius, meleeTargets);
+        var hits = Physics2D.OverlapCircleAll(center, radius, meleeTargets);
         if (hits == null || hits.Length == 0) return;
 
-        float halfArc = meleeArcDeg * 0.5f;
+        bool hitSomething = false;
+        float halfArc = arc * 0.5f;
         foreach (var h in hits)
         {
             if (h.attachedRigidbody && h.attachedRigidbody.gameObject == gameObject) continue;
 
             Vector2 toTarget = ((Vector2)h.transform.position - (Vector2)transform.position).normalized;
-            float angle = Vector2.SignedAngle(aimDir, toTarget);
-            if (Mathf.Abs(angle) > halfArc) continue;
+            float ang = Vector2.SignedAngle(aimDir, toTarget);
+            if (Mathf.Abs(ang) > halfArc) continue;
 
-            if (h.TryGetComponent<IDamageable>(out var dmg) && dmg.IsAlive)
+            if (h.TryGetComponent<IDamageable>(out var target) && target.IsAlive)
             {
-                dmg.TakeDamage(meleeDamage, transform.position);
+                target.TakeDamage(dmg, transform.position);
+                hitSomething = true;
             }
         }
+
+        // Only consume durability on successful hits
+        if (hitSomething && inventory) inventory.DamageEquippedDurability(1);
     }
 
 #if UNITY_EDITOR
