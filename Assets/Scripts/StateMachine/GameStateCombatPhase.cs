@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class GameStateCombatPhase : GameState
 {
+    private LevelManager levelManager;
+    private Transform player;
     public GameStateCombatPhase(StateManager stateManager) : base("CombatPhase", stateManager)
     {
         
@@ -17,8 +19,12 @@ public class GameStateCombatPhase : GameState
     public override void OnEnter()
     {
         base.OnEnter();
+        Debug.Log("Entered Combat Phase state");
+        levelManager = GameObject.FindGameObjectWithTag("LevelManager").GetComponent<LevelManager>();
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+        levelManager.SpawnEnemiesForCombat(player);
+        levelManager.ManageCombatPhase();
 
-        
     }
 
     public override void OnExit()

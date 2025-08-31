@@ -25,6 +25,9 @@ public class Health : MonoBehaviour, IDamageable
 
     public UnityEvent onDamaged;
     public UnityEvent onDeath;
+    public UnityEngine.Events.UnityEvent<int, int> onHealthChanged; // (current, max)
+
+    public int MaxHealth => maxHealth;
 
     public int CurrentHealth { get; private set; }
     public bool IsAlive => CurrentHealth > 0;
@@ -53,6 +56,7 @@ public class Health : MonoBehaviour, IDamageable
 
         // apply damage
         CurrentHealth = Mathf.Max(0, CurrentHealth - Mathf.Abs(amount));
+        onHealthChanged?.Invoke(CurrentHealth, MaxHealth);
         onDamaged?.Invoke();
 
         // spawn hit effect at closest collider point to attacker
@@ -89,6 +93,7 @@ public class Health : MonoBehaviour, IDamageable
     {
         if (!IsAlive) return;
         CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + Mathf.Abs(amount));
+        onHealthChanged?.Invoke(CurrentHealth, MaxHealth);
     }
 
     private IEnumerator IFrames(float duration)

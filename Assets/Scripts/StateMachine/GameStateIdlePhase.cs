@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class GameStateIdlePhase : GameState
 {
+    private LevelManager levelManager;
+    private int weaponsToSpawn = 3;
 
     public GameStateIdlePhase(StateManager stateManager) : base("IdlePhase", stateManager)
     {
@@ -21,7 +23,10 @@ public class GameStateIdlePhase : GameState
     {
         base.OnEnter();
         Debug.Log("Entered Idle State");
-
+        levelManager = GameObject.FindGameObjectWithTag("LevelManager").GetComponent<LevelManager>();
+        levelManager.InitializeFromMaskOnce();
+        levelManager.SpawnWeaponsOnGround(weaponsToSpawn);
+        levelManager.EnterCombatMode();
     }
 
     public override void OnExit()
@@ -39,7 +44,7 @@ public class GameStateIdlePhase : GameState
 
     private void OnEnable()
     {
-
+        
     }
 
     private void OnDisable()

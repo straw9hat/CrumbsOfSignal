@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class GameStateMainMenu : GameState
 {
+    GameObject mainmenu;
+
     public GameStateMainMenu(StateManager stateManager) : base("MainMenu", stateManager)
     {
 
@@ -17,6 +19,8 @@ public class GameStateMainMenu : GameState
     public override void OnEnter()
     {
         base.OnEnter();
+        mainmenu = GameObject.FindGameObjectWithTag("MainMenu");
+        mainmenu.SetActive(true);
         GameEventManager.MainMenuEvent += startGame;
         Debug.Log("Entered Main Menu");
     }
@@ -24,6 +28,7 @@ public class GameStateMainMenu : GameState
     public override void OnExit()
     {
         base.OnExit();
+        mainmenu.SetActive(false);
         GameEventManager.MainMenuEvent -= startGame;
         Debug.Log("Exited Main Menu");
     }
@@ -49,6 +54,5 @@ public class GameStateMainMenu : GameState
     private void startGame()
     {
         StateManager.SetNewState(StateManager.IdlePhase);
-        GameObject.Find("MainMenu").SetActive(false);
     }
 }

@@ -98,7 +98,7 @@ public class PlayerController : MonoBehaviour
         health.TriggerIFrames(dodgeIFrameDuration);
 
         // (optional) play a dodge anim
-        if (animator) animator.SetTrigger("Dodge");
+        //if (animator) animator.SetTrigger("Dodge");
 
         // you can also tweak movement here (e.g., burst/roll), but not required
         yield return new WaitForSeconds(dodgeIFrameDuration);
@@ -133,15 +133,19 @@ public class PlayerController : MonoBehaviour
         currentVelocity = rb.linearVelocity;
 
         // Anim + facing
-        if (animator != null)
+        if (animator)
         {
-            animator.SetFloat("Speed", currentVelocity.magnitude);
-            if (currentVelocity.sqrMagnitude > 0.0001f)
+            float speed = rb.linearVelocity.magnitude;
+            animator.SetFloat("Speed", speed);
+            animator.SetFloat("MoveY", rb.linearVelocity.y);
+
+            // decide front/back for idle/run
+            if (speed > 0.05f)
             {
-                var dir = currentVelocity.normalized;
-                animator.SetFloat("MoveX", dir.x);
-                animator.SetFloat("MoveY", dir.y);
+                // moving: face by Y sign
+                animator.SetInteger("FacingFB", rb.linearVelocity.y >= 0f ? 1 : 0);
             }
+            // if standing still, we leave FacingFB as last value
         }
 
         // Flip graphics based on aim or movement
@@ -183,6 +187,28 @@ public class PlayerController : MonoBehaviour
         return true;
     }
 
+    private int ComputeAttackQuad(Vector2 aimDir)
+    {
+        // tolerate tiny deadzones
+        const float eps = 0.001f;
+
+        // determine front/back first
+        int fb; // 0 front, 1 back
+        if (Mathf.Abs(aimDir.y) > eps)
+            fb = (aimDir.y >= 0f) ? 1 : 0;
+        else
+            fb = animator ? animator.GetInteger("FacingFB") : 0;
+
+        // then left/right
+        int lr = (aimDir.x >= 0f) ? 1 : 0; // 0 = left, 1 = right
+
+        // map to quad index: 0 FL, 1 FR, 2 BL, 3 BR
+        if (fb == 0) // front
+            return (lr == 0) ? 0 : 1;
+        else         // back
+            return (lr == 0) ? 2 : 3;
+    }
+
     private void TryMelee()
     {
         if (!health || !health.IsAlive) return;
@@ -195,7 +221,15 @@ public class PlayerController : MonoBehaviour
         Vector2 aimDir = GetAimDirection();
         Vector2 center = (Vector2)transform.position + aimDir * reach;
 
-        if (animator != null) animator.SetTrigger("Attack");
+        int quad = ComputeAttackQuad(aimDir);
+
+        if (animator)
+        {
+            animator.SetInteger("AttackQuad", quad);
+            // also set Facing so we return to the right idle set after the clip
+            animator.SetInteger("FacingFB", (quad >= 2) ? 1 : 0); // BL/BR are back
+            animator.SetTrigger("Attack");
+        }
 
         var hits = Physics2D.OverlapCircleAll(center, radius, meleeTargets);
         if (hits == null || hits.Length == 0) return;

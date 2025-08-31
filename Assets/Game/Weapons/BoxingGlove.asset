@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: BoxingGlove
   m_EditorClassIdentifier: Assembly-CSharp::WeaponDefinition
   displayName: Boxing Glove
-  icon: {fileID: 0}
-  baseDamage: 20
-  reach: 1.1
+  icon: {fileID: 21300000, guid: 1668aab548495bf48a934407870994e4, type: 3}
+  baseDamage: 40
+  reach: 1.5
   radius: 0.75
   arcDegrees: 120
   cooldown: 0.35
